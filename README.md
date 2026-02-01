@@ -9,3 +9,9 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install numpy matplotlib
 ```
+
+Install GUI backend for matplotlib if needed:
+
+```
+pip install PyQt6
+```
