@@ -82,6 +82,15 @@ class Convolution:
         self.stride = stride
         self.pad = pad
 
+        # 中間データ（backwardで使用）
+        self.x = None
+        self.col = None
+        self.col_W = None
+
+        # 重みとバイアスの勾配
+        self.dW = None
+        self.db = None
+
     def forward(self, x):
         FN, C, FH, FW = self.W.shape
         N, C, H, W = x.shape
@@ -93,7 +102,16 @@ class Convolution:
         out = np.dot(col, col_W) + self.b
 
         out = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)
+
+        self.x = x
+        self.col = col
+        self.col_W = col_W
+
         return out
+
+    def backward(self, dout):
+        # TODO: 実装
+        return dout
 
 
 class Pooling:
@@ -102,6 +120,10 @@ class Pooling:
         self.pool_w = pool_w
         self.stride = stride
         self.pad = pad
+
+        # 中間データ（backwardで使用）
+        self.x = None
+        self.arg_max = None
 
     def forward(self, x):
         N, C, H, W = x.shape
@@ -120,3 +142,7 @@ class Pooling:
         out = out.reshape(N, out_h, out_w, C).transpose(0, 3, 1, 2)
 
         return out
+
+    def backward(self, dout):
+        # TODO: 実装
+        return dout
