@@ -88,8 +88,8 @@ class Convolution:
         out_h = int(1 + (H + 2 * self.pad - FH) / self.stride)
         out_w = int(1 + (W + 2 * self.pad - FW) / self.stride)
 
-        col = im2col(x, FH, FW, self.stride, self.pad)
-        col_W = self.W.reshape(FN, -1).T
+        col = im2col(x, FH, FW, self.stride, self.pad)  # (N*out_h*out_w, C*FH*FW)
+        col_W = self.W.reshape(FN, -1).T  # (C*FH*FW, FN)
         out = np.dot(col, col_W) + self.b
 
         out = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)
@@ -108,10 +108,15 @@ class Pooling:
         out_h = int(1 + (H - self.pool_h) / self.stride)
         out_w = int(1 + (W - self.pool_w) / self.stride)
 
-        col = im2col(x, self.pool_h, self.pool_w, self.stride, self.pad)
-        col = col.reshape(-1, self.pool_h * self.pool_w)
+        col = im2col(
+            x, self.pool_h, self.pool_w, self.stride, self.pad
+        )  # (N*out_h*out_w, C*pool_h*pool_w)
+        # Pooling layerはチャンネルごとに独立しているため、colをreshapeして、(N*out_h*out_w*C, pool_h*pool_w)の2次元配列に変換する。
+        col = col.reshape(
+            -1, self.pool_h * self.pool_w
+        )  # (N*out_h*out_w*C, pool_h*pool_w)
 
-        out = np.max(col, axis=1)
+        out = np.max(col, axis=1)  # (N*out_h*out_w*C,)
         out = out.reshape(N, out_h, out_w, C).transpose(0, 3, 1, 2)
 
         return out
