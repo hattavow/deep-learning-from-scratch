@@ -1,7 +1,7 @@
 import numpy as np
 
 from common.functions import cross_entropy_error, softmax
-from common.util import im2col
+from common.util import col2im, im2col
 
 
 class Relu:
@@ -110,8 +110,23 @@ class Convolution:
         return out
 
     def backward(self, dout):
-        # TODO: 実装
-        return dout
+        FN, C, FH, FW = self.W.shape
+        # dout in (N, FN, out_h, out_w)
+        # doutを(N*out_h*out_w, FN)の2次元配列に変換する。
+        dout = dout.transpose(0, 2, 3, 1).reshape(-1, FN)
+
+        self.db = np.sum(dout, axis=0)
+        # col.T in (C*FH*FW, N*out_h*out_w)
+        # dW (C*FH*FW, FN)
+        self.dW = np.dot(self.col.T, dout)
+        # dWを(Wの形状)に変換する。
+        # dW (C*FH*FW, FN) -> (FN, C*FH*FW) -> (FN, C, FH, FW)
+        self.dW = self.dW.transpose(1, 0).reshape(FN, C, FH, FW)
+
+        dcol = np.dot(dout, self.col_W.T)  # (N*out_h*out_w, C*FH*FW)
+        dx = col2im(dcol, self.x.shape, FH, FW, self.stride, self.pad)
+
+        return dx
 
 
 class Pooling:
