@@ -153,11 +153,29 @@ class Pooling:
             -1, self.pool_h * self.pool_w
         )  # (N*out_h*out_w*C, pool_h*pool_w)
 
+        arg_max = np.argmax(col, axis=1)  # (N*out_h*out_w*C,)
         out = np.max(col, axis=1)  # (N*out_h*out_w*C,)
         out = out.reshape(N, out_h, out_w, C).transpose(0, 3, 1, 2)
+
+        self.x = x
+        self.arg_max = arg_max
 
         return out
 
     def backward(self, dout):
-        # TODO: 実装
-        return dout
+        dout = dout.transpose(0, 2, 3, 1)  # (N, out_h, out_w, C)
+
+        pool_size = self.pool_h * self.pool_w
+        dmax = np.zeros((dout.size, pool_size))  # (N*out_h*out_w*C, pool_h*pool_w)
+        dmax[np.arange(self.arg_max.size), self.arg_max.flatten()] = dout.flatten()
+
+        dmax = dmax.reshape(
+            dout.shape + (pool_size,)
+        )  # (N, out_h, out_w, C, pool_h*pool_w)
+
+        dcol = dmax.reshape(
+            dmax.shape[0] * dmax.shape[1] * dmax.shape[2], -1
+        )  # (N*out_h*out_w, C*pool_h*pool_w)
+        dx = col2im(dcol, self.x.shape, self.pool_h, self.pool_w, self.stride, self.pad)
+
+        return dx
